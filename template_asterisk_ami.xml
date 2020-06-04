@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>4.4</version>
+    <date>2020-06-04T14:40:34Z</date>
+    <groups>
+        <group>
+            <name>Templates/Applications</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Template Asterisk AMI</template>
+            <name>Template Asterisk AMI</name>
+            <description>Template install&#13;
+1) Create two macros by host:&#13;
+{$HOST_ID} - Set ID host&#13;
+{$ASTERISK_AMI_COOKIE} - empty&#13;
+2) Make sure you have both &quot;enabled = yes&quot; and &quot;webenabled = yes&quot; setup in /etc/asterisk/manager.conf, You may also use &quot;httptimeout&quot; to set a default timeout for HTTP connections.&#13;
+3) Make sure you have a manager username/secret&#13;
+4) Set username/secret, AMI WEB port, protocol in macro template
+
+Author: Stanislav Yaroshevskiy 1@3sla.ru</description>
+            <groups>
+                <group>
+                    <name>Templates/Applications</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>AMI</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>Asterisk - AMI SIPpeers</name>
+                    <type>HTTP_AGENT</type>
+                    <key>AsteriskAMISIPpeers</key>
+                    <history>0</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>AMI</name>
+                        </application>
+                    </applications>
+                    <url>{$ASTERISK_AMI_PROTOCOL}://{HOST.IP}:{$ASTERISK_AMI_PORT}/mxml</url>
+                    <query_fields>
+                        <query_field>
+                            <name>action</name>
+                            <value>SIPpeers</value>
+                        </query_field>
+                    </query_fields>
+                    <follow_redirects>NO</follow_redirects>
+                    <headers>
+                        <header>
+                            <name>Cookie</name>
+                            <value>mansession_id=&quot;{$ASTERISK_AMI_COOKIE}&quot;;</value>
+                        </header>
+                    </headers>
+                </item>
+                <item>
+                    <name>Asterisk - AMI SIPshowregistry</name>
+                    <type>HTTP_AGENT</type>
+                    <key>AsteriskAMISIPshowregistry</key>
+                    <history>0</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>AMI</name>
+                        </application>
+                    </applications>
+                    <url>{$ASTERISK_AMI_PROTOCOL}://{HOST.IP}:{$ASTERISK_AMI_PORT}/mxml</url>
+                    <query_fields>
+                        <query_field>
+                            <name>action</name>
+                            <value>SIPshowregistry</value>
+                        </query_field>
+                    </query_fields>
+                    <follow_redirects>NO</follow_redirects>
+                    <headers>
+                        <header>
+                            <name>Cookie</name>
+                            <value>mansession_id=&quot;{$ASTERISK_AMI_COOKIE}&quot;;</value>
+                        </header>
+                    </headers>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>Asterisk - AMI SIPpeers LLD</name>
+                    <type>HTTP_AGENT</type>
+                    <key>AsteriskAMISIPpeersLLD</key>
+                    <delay>1h</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#SIP_PEER_CHANNELTYPE}/{#SIP_PEER_OBEJECTNAME} - Status</name>
+                            <type>DEPENDENT</type>
+                            <key>sippeerstatus[{#SIP_PEER_CHANNELTYPE}/{#SIP_PEER_OBEJECTNAME}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>CHAR</value_type>
+                            <applications>
+                                <application>
+                                    <name>AMI</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SipPeer</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>XMLPATH</type>
+                                    <params>string(//response/generic[@objectname=&quot;{#SIP_PEER_OBEJECTNAME}&quot;]/@status)</params>
+                                </step>
+                                <step>
+                                    <type>REGEX</type>
+                                    <params>^([\w]+)
+\1</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>AsteriskAMISIPpeers</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>{#SIP_PEER_CHANNELTYPE}/{#SIP_PEER_OBEJECTNAME} - Response Time</name>
+                            <type>DEPENDENT</type>
+                            <key>sippeer[{#SIP_PEER_CHANNELTYPE}/{#SIP_PEER_OBEJECTNAME}]</key>
+                            <delay>0</delay>
+                            <value_type>FLOAT</value_type>
+                            <units>ms</units>
+                            <applications>
+                                <application>
+                                    <name>AMI</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SipPeer</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>XMLPATH</type>
+                                    <params>string(//response/generic[@objectname=&quot;{#SIP_PEER_OBEJECTNAME}&quot;]/@status)</params>
+                                </step>
+                                <step>
+                                    <type>JAVASCRIPT</type>
+                                    <params>if(value.substring(0,2) == 'OK'){
+	return value.match(/(\d+)/gm);
+}
+else {
+	return -1;
+}</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>AsteriskAMISIPpeers</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last(5m)}&gt;150</expression>
+                                    <name>SIP Peer - {#SIP_PEER_CHANNELTYPE}/{#SIP_PEER_OBEJECTNAME} - Critical response time</name>
+                                    <status>DISABLED</status>
+                                    <priority>HIGH</priority>
+                                </trigger_prototype>
+                                <trigger_prototype>
+                                    <expression>{last(5m)}&gt;75</expression>
+                                    <name>SIP Peer - {#SIP_PEER_CHANNELTYPE}/{#SIP_PEER_OBEJECTNAME} - High response time</name>
+                                    <status>DISABLED</status>
+                                    <priority>AVERAGE</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <url>{$ASTERISK_AMI_PROTOCOL}://{HOST.IP}:{$ASTERISK_AMI_PORT}/mxml</url>
+                    <query_fields>
+                        <query_field>
+                            <name>action</name>
+                            <value>SIPpeers</value>
+                        </query_field>
+                    </query_fields>
+                    <follow_redirects>NO</follow_redirects>
+                    <headers>
+                        <header>
+                            <name>Cookie</name>
+                            <value>mansession_id=&quot;{$ASTERISK_AMI_COOKIE}&quot;;</value>
+                        </header>
+                    </headers>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#SIP_PEER_OBEJECTNAME}</lld_macro>
+                            <path>$.['objectname']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#SIP_PEER_CHANNELTYPE}</lld_macro>
+                            <path>$.['channeltype']</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>XMLPATH</type>
+                            <params>//response/generic[@channeltype]</params>
+                        </step>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>function xmlToJson(xml){
+	xml = xml.replace(/=/gi,  '&quot;:'	);
+	xml = xml.replace(/&quot; /gi, '&quot;, &quot;');
+	xml = xml.replace(/\/&gt;/gi, '},' );
+	xml = xml.replace(/&lt;generic /gi,'{&quot;' );
+        xml = '[' + xml.substring(0,xml.length-1) + ']';
+	return xml;
+}
+return xmlToJson(value);</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>Asterisk - AMI SIPshowregistry LLD</name>
+                    <type>HTTP_AGENT</type>
+                    <key>AsteriskAMISIPshowregistryLLD</key>
+                    <delay>1h</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>SIP Registry Status - {#SIP_REGISTRY_USERNAME}@{#SIP_REGISTRY_HOST}:{#SIP_REGISTRY_PORT}</name>
+                            <type>DEPENDENT</type>
+                            <key>sipregistry[{#SIP_REGISTRY_USERNAME}@{#SIP_REGISTRY_HOST}:{#SIP_REGISTRY_PORT}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>AMI</name>
+                                </application>
+                            </applications>
+                            <application_prototypes>
+                                <application_prototype>
+                                    <name>SipRegistry</name>
+                                </application_prototype>
+                            </application_prototypes>
+                            <preprocessing>
+                                <step>
+                                    <type>XMLPATH</type>
+                                    <params>string(//response/generic[@event=&quot;RegistryEntry&quot;][@username=&quot;{#SIP_REGISTRY_USERNAME}&quot;][@host=&quot;{#SIP_REGISTRY_HOST}&quot;][@port=&quot;{#SIP_REGISTRY_PORT}&quot;]/@state)</params>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>AsteriskAMISIPshowregistry</key>
+                            </master_item>
+                            <trigger_prototypes>
+                                <trigger_prototype>
+                                    <expression>{last(,5m)}&lt;&gt;&quot;Registered&quot;</expression>
+                                    <name>SIP Registry Status - {#SIP_REGISTRY_USERNAME}@{#SIP_REGISTRY_HOST}:{#SIP_REGISTRY_PORT}</name>
+                                    <status>DISABLED</status>
+                                    <priority>HIGH</priority>
+                                </trigger_prototype>
+                            </trigger_prototypes>
+                        </item_prototype>
+                    </item_prototypes>
+                    <url>{$ASTERISK_AMI_PROTOCOL}://{HOST.IP}:{$ASTERISK_AMI_PORT}/mxml</url>
+                    <query_fields>
+                        <query_field>
+                            <name>action</name>
+                            <value>SIPshowregistry</value>
+                        </query_field>
+                    </query_fields>
+                    <follow_redirects>NO</follow_redirects>
+                    <headers>
+                        <header>
+                            <name>Cookie</name>
+                            <value>mansession_id=&quot;{$ASTERISK_AMI_COOKIE}&quot;;</value>
+                        </header>
+                    </headers>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#SIP_REGISTRY_HOST}</lld_macro>
+                            <path>$.['host']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#SIP_REGISTRY_USERNAME}</lld_macro>
+                            <path>$.['username']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#SIP_REGISTRY_PORT}</lld_macro>
+                            <path>$.['port']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#SIP_REGISTRY_STATE}</lld_macro>
+                            <path>$.['state']</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#SIP_REGISTRY_REGISTRATIONTIME}</lld_macro>
+                            <path>$.['registrationtime']</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>XMLPATH</type>
+                            <params>//response/generic[@host]</params>
+                        </step>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>function xmlToJson(xml){
+	xml = xml.replace(/=/gi,  '&quot;:'	);
+	xml = xml.replace(/&quot; /gi, '&quot;, &quot;');
+	xml = xml.replace(/\/&gt;/gi, '},' );
+	xml = xml.replace(/&lt;generic /gi,'{&quot;' );
+	//xml = '{ &quot;element&quot;: [' + xml.substring(0,xml.length-1) + ']}';
+        xml = '[' + xml.substring(0,xml.length-1) + ']';
+	return xml;
+}
+return xmlToJson(value);</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+            <httptests>
+                <httptest>
+                    <name>Asterisk - Get and Set AMI Cookie</name>
+                    <application>
+                        <name>AMI</name>
+                    </application>
+                    <delay>30s</delay>
+                    <steps>
+                        <step>
+                            <name>Asterisk Web AMI - Getting cookie ID</name>
+                            <url>{$ASTERISK_AMI_PROTOCOL}://{HOST.IP}:{$ASTERISK_AMI_PORT}/mxml</url>
+                            <query_fields>
+                                <query_field>
+                                    <name>action</name>
+                                    <value>login</value>
+                                </query_field>
+                                <query_field>
+                                    <name>username</name>
+                                    <value>{$ASTERISK_AMI_USERNAME}</value>
+                                </query_field>
+                                <query_field>
+                                    <name>secret</name>
+                                    <value>{$ASTERISK_AMI_SECRET}</value>
+                                </query_field>
+                            </query_fields>
+                            <variables>
+                                <variable>
+                                    <name>{mansession_id}</name>
+                                    <value>regex:mansession_id=&quot;([0-9A-z]+)&quot;</value>
+                                </variable>
+                            </variables>
+                            <follow_redirects>NO</follow_redirects>
+                            <retrieve_mode>BOTH</retrieve_mode>
+                            <timeout>3s</timeout>
+                            <required>Success</required>
+                        </step>
+                        <step>
+                            <name>Zabbix API - Getting Session ID</name>
+                            <url>{$ZABBIX_API_URL}</url>
+                            <posts>{&#13;
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,&#13;
+    &quot;method&quot;: &quot;user.login&quot;,&#13;
+    &quot;params&quot;: {&#13;
+        &quot;user&quot;: &quot;{$ZABBIX_API_LOGIN}&quot;,&#13;
+        &quot;password&quot;: &quot;{$ZABBIX_API_PASSWORD}&quot;&#13;
+    },&#13;
+    &quot;id&quot;: 1,&#13;
+    &quot;auth&quot;: null&#13;
+}</posts>
+                            <variables>
+                                <variable>
+                                    <name>{sid}</name>
+                                    <value>regex:([0-9A-z]{32})</value>
+                                </variable>
+                            </variables>
+                            <headers>
+                                <header>
+                                    <name>Content-Type</name>
+                                    <value>application/json-rpc</value>
+                                </header>
+                            </headers>
+                            <follow_redirects>NO</follow_redirects>
+                            <timeout>3s</timeout>
+                            <required>result</required>
+                        </step>
+                        <step>
+                            <name>Zabbix API - Macro ID search</name>
+                            <url>{$ZABBIX_API_URL}</url>
+                            <posts>{&#13;
+    &quot;jsonrpc&quot;:&quot;2.0&quot;,&#13;
+    &quot;method&quot;:&quot;usermacro.get&quot;,&#13;
+    &quot;params&quot;:{&#13;
+        &quot;output&quot;:&quot;extend&quot;,&#13;
+        &quot;hostids&quot;:&quot;{$HOST_ID}&quot;&#13;
+    },&#13;
+    &quot;auth&quot;:&quot;{sid}&quot;,&#13;
+    &quot;id&quot;:1&#13;
+}</posts>
+                            <variables>
+                                <variable>
+                                    <name>{hostmacroid}</name>
+                                    <value>regex:{&quot;hostmacroid&quot;:&quot;([0-9]+)&quot;[A-z0-9,&quot;:]+&quot;{\$ASTERISK_AMI_COOKIE}&quot;</value>
+                                </variable>
+                            </variables>
+                            <headers>
+                                <header>
+                                    <name>Content-Type</name>
+                                    <value>application/json-rpc</value>
+                                </header>
+                            </headers>
+                            <follow_redirects>NO</follow_redirects>
+                            <timeout>5s</timeout>
+                            <required>result</required>
+                        </step>
+                        <step>
+                            <name>Zabbix API - macros update</name>
+                            <url>{$ZABBIX_API_URL}</url>
+                            <posts>{&#13;
+    &quot;jsonrpc&quot;:&quot;2.0&quot;,&#13;
+    &quot;method&quot;:&quot;usermacro.update&quot;,&#13;
+    &quot;params&quot;:{&#13;
+        &quot;hostmacroid&quot;:&quot;{hostmacroid}&quot;,&#13;
+        &quot;value&quot;:&quot;{mansession_id}&quot;&#13;
+    },&#13;
+    &quot;auth&quot;:&quot;{sid}&quot;,&#13;
+    &quot;id&quot;:1&#13;
+}</posts>
+                            <headers>
+                                <header>
+                                    <name>Content-type</name>
+                                    <value>application/json-rpc</value>
+                                </header>
+                            </headers>
+                            <follow_redirects>NO</follow_redirects>
+                            <timeout>5s</timeout>
+                            <required>result</required>
+                        </step>
+                    </steps>
+                </httptest>
+            </httptests>
+            <macros>
+                <macro>
+                    <macro>{$ASTERISK_AMI_PORT}</macro>
+                    <value>8089</value>
+                    <description>Default 8088(HTTP) or 8089(HTTPS)</description>
+                </macro>
+                <macro>
+                    <macro>{$ASTERISK_AMI_PROTOCOL}</macro>
+                    <value>https</value>
+                    <description>HTTP or HTTPS</description>
+                </macro>
+                <macro>
+                    <macro>{$ASTERISK_AMI_SECRET}</macro>
+                    <value>3HL7Hi7js6E4sQ3yANaj</value>
+                    <description>AMI password</description>
+                </macro>
+                <macro>
+                    <macro>{$ASTERISK_AMI_USERNAME}</macro>
+                    <value>zabbix</value>
+                    <description>AMI login</description>
+                </macro>
+                <macro>
+                    <macro>{$ZABBIX_API_LOGIN}</macro>
+                    <value>ZabbixAMIAuthUpdater</value>
+                    <description>Zabbix API login</description>
+                </macro>
+                <macro>
+                    <macro>{$ZABBIX_API_PASSWORD}</macro>
+                    <value>ZabbixAMIAuthUpdater</value>
+                    <description>Zabbix API password</description>
+                </macro>
+                <macro>
+                    <macro>{$ZABBIX_API_URL}</macro>
+                    <value>https://localhost/api_jsonrpc.php</value>
+                    <description>Zabbix API URL</description>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+    <triggers>
+        <trigger>
+            <expression>{Template Asterisk AMI:web.test.fail[Asterisk - Get and Set AMI Cookie].last(5m)}=1</expression>
+            <name>Asterisk WEB AMI - authentication error</name>
+            <priority>WARNING</priority>
+        </trigger>
+        <trigger>
+            <expression>{Template Asterisk AMI:web.test.fail[Asterisk - Get and Set AMI Cookie].last(5m)}=2</expression>
+            <name>Zabbix API - authorization error</name>
+            <priority>WARNING</priority>
+        </trigger>
+        <trigger>
+            <expression>{Template Asterisk AMI:web.test.fail[Asterisk - Get and Set AMI Cookie].last(5m)}=3</expression>
+            <name>Zabbix API - macro search error</name>
+            <priority>WARNING</priority>
+        </trigger>
+        <trigger>
+            <expression>{Template Asterisk AMI:web.test.fail[Asterisk - Get and Set AMI Cookie].last(5m)}=4</expression>
+            <name>Zabbix API - macro update error</name>
+            <priority>WARNING</priority>
+        </trigger>
+    </triggers>
+</zabbix_export>
